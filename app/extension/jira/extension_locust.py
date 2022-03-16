@@ -10,16 +10,14 @@ status_ids = [1, 2, 3, 4]
 
 @jira_measure("locust_app_specific_action")
 def app_specific_action(locust):
-    # update locustio.jira.requests_params with 'data_sets["custom-issues"] = read_input_file
-(JIRA_DATASET_CUSTOM_ISSUES)'
+    # update locustio.jira.requests_params with 'data_sets["custom-issues"] = read_input_file (JIRA_DATASET_CUSTOM_ISSUES)'
     issue_key = random.choice(jira_dataset["custom-issues"])[0]
     logger.locust_info(f"Get associated checklists from {issue_key}")
     CHECKLIST_PARAMS = {
         "issueKey": issue_key
     }
     #1
-    checklist_request = locust.get("/rest/railsware/1.0/checklist", params=CHECKLIST_PARAMS,
-catch_response=True)
+    checklist_request = locust.get("/rest/railsware/1.0/checklist", params=CHECKLIST_PARAMS,catch_response=True)
     checklist_content = checklist_request.content.decode("utf-8")
     if "checklists" not in checklist_content:
         logger.error(f"'checklists' was not found in {checklist_content}")
@@ -48,8 +46,7 @@ catch_response=True)
             }
             update_checklist_body.append(item_for_update)
             #2
-            update_item_request = locust.client.request(method="PUT", url=f"/rest/railsware/1.0/checklist/
-{checklist_id}", json=update_checklist_body, headers=TEXT_HEADERS, catch_response=True)
+            update_item_request = locust.client.request(method="PUT", url=f"/rest/railsware/1.0/checklist/{checklist_id}", json=update_checklist_body, headers=TEXT_HEADERS, catch_response=True)
             update_item_content = update_item_request.content.decode("utf-8")
             if label not in update_item_content:
                 logger.error(f"Label {label} was not found in {update_item_content}")
@@ -61,8 +58,7 @@ catch_response=True)
                 "isReplace": "false",
                 "stringValue": label
             }
-            create_item_request = locust.client.request(method="PUT", url=f"/rest/railsware/1.0/checklist/
-{checklist_id}/item", json=item_body, headers=TEXT_HEADERS, catch_response=True)
+            create_item_request = locust.client.request(method="PUT", url=f"/rest/railsware/1.0/checklist/{checklist_id}/item", json=item_body, headers=TEXT_HEADERS, catch_response=True)
             create_item_content = create_item_request.content.decode("utf-8")
             if "checklists" not in create_item_content:
                 logger.error(f"'checklists' was not found in {create_item_content}")
