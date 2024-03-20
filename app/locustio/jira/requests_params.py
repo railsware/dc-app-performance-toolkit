@@ -1,8 +1,10 @@
 from locustio.common_utils import generate_random_string, read_input_file, BaseResource
 from util.project_paths import JIRA_DATASET_ISSUES, JIRA_DATASET_JQLS, JIRA_DATASET_KANBAN_BOARDS, \
     JIRA_DATASET_PROJECTS, JIRA_DATASET_SCRUM_BOARDS, JIRA_DATASET_USERS
+from extension.jira.constants import PROJECT_ID, EPIC_ID, ISSUE_TYPE_IDS, SUB_TASK_ID, PRIORITY_IDS
 import json
-
+import uuid
+import random
 
 def jira_datasets():
     data_sets = dict()
@@ -51,6 +53,64 @@ class BrowseIssue(JiraResource):
 class ViewDashboard(JiraResource):
     action_name = 'view_dashboard'
 
+class CreateTemplate(JiraResource):
+    id_pattern = '"id":([0-9]+)'
+
+    @staticmethod
+    def _generate_node(issue_hierarchy_level, issue_type_id, parent_id=None):
+        node_id = str(uuid.uuid4())
+        summary = f"Issue {str(random.randint(1, 100))}"
+        description =f"{generate_random_string(200)}"
+        fields = {
+            "priority": {
+                "id": random.choice(PRIORITY_IDS)
+            }
+        }
+        node_data = {
+            "id": node_id,
+            "summary": summary,
+            "description": description,
+            "issueTypeId": issue_type_id,
+            "issueHierarchyLevel": issue_hierarchy_level,
+            "fields": json.dumps(fields)
+        }
+        if parent_id is not None:
+            node_data["parentId"] = parent_id
+        return node_data
+
+    def _generate_nodes_hierarchy(self):
+        epic = self._generate_node("Epic", EPIC_ID)
+        num_of_stories = random.randint(5, 10)
+        nodes = [epic]
+
+        for _ in range(num_of_stories):
+            issue_type_id = random.choice(ISSUE_TYPE_IDS)
+            node = self._generate_node("Story", issue_type_id, epic["id"])
+            num_of_subtasks = random.randint(0, 2)
+            nodes.append(node)
+            for _ in range(num_of_subtasks):
+               nodes.append(self._generate_node("Subtask", SUB_TASK_ID, node["id"]))
+        return nodes
+
+    def prepare_graqhql_body(self):
+        operationName = "createTemplateFromNodes"
+        query = "mutation createTemplateFromNodes($input: CreateTemplateFromNodesInput!) {\n  createTemplateFromNodes(input: $input) {\n    template {\n      id\n      name\n      nodes {\n        ...TemplateNode\n        __typename\n      }\n      variables {\n        name\n        type\n        __typename\n      }\n      __typename\n    }\n    validations {\n      validationErrors\n      __typename\n    }\n    __typename\n  }\n}\n\nfragment TemplateBasicNode on TemplateNode {\n  checklist\n  id\n  level\n  parentId\n  position\n  summary\n  issueTypeId\n  __typename\n}\n\nfragment TemplateNode on TemplateNode {\n  ...TemplateBasicNode\n  description\n  fields\n  __typename\n}"
+        template_name = f"Locust template name {generate_random_string(20)}"
+
+        nodes = self._generate_nodes_hierarchy()
+        body = {
+            "operationName": operationName,
+            "query": query,
+            "variables": {
+                "input": {
+                    "name": template_name,
+                    "nodes": nodes,
+                    "projectId": PROJECT_ID,
+                    "variables": []
+                }
+            }
+        }
+        return body
 
 class CreateIssue(JiraResource):
     action_name = 'create_issue'

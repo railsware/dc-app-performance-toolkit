@@ -1,9 +1,9 @@
 import random
 import re
 from locustio.jira.requests_params import Login, BrowseIssue, CreateIssue, SearchJql, ViewBoard, BrowseBoards, \
-    BrowseProjects, AddComment, ViewDashboard, EditIssue, ViewProjectSummary, jira_datasets
+    BrowseProjects, AddComment, ViewDashboard, EditIssue, ViewProjectSummary, jira_datasets, CreateTemplate
 from locustio.common_utils import jira_measure, fetch_by_re, timestamp_int, generate_random_string, TEXT_HEADERS, \
-    ADMIN_HEADERS, NO_TOKEN_HEADERS, RESOURCE_HEADERS, init_logger, raise_if_login_failed
+    ADMIN_HEADERS, NO_TOKEN_HEADERS, RESOURCE_HEADERS, init_logger, raise_if_login_failed, JSON_HEADERS
 
 from util.conf import JIRA_SETTINGS
 import uuid
@@ -155,6 +155,17 @@ def view_issue(locust):
     locust.client.put(f'/rest/projects/1.0/project/{project_key}/lastVisited',
                       params.browse_project_payload,
                       catch_response=True)
+
+
+def create_template(locust):
+    params = CreateTemplate()
+    body = params.prepare_graqhql_body()
+
+    response = locust.post('/rest/railsware/smart-templates/latest/graphql', headers=JSON_HEADERS, json=body, catch_response=True)
+    content = response.content.decode('utf-8')
+    node_ids = re.findall(params.id_pattern, content)
+    if not node_ids:
+        locust.error("Failed to create template")
 
 
 def create_issue(locust):
