@@ -1,7 +1,8 @@
 import random
 import re
 from locustio.jira.requests_params import Login, BrowseIssue, CreateIssue, SearchJql, ViewBoard, BrowseBoards, \
-    BrowseProjects, AddComment, ViewDashboard, EditIssue, ViewProjectSummary, jira_datasets, CreateTemplate
+    BrowseProjects, AddComment, ViewDashboard, EditIssue, ViewProjectSummary, jira_datasets, CreateTemplate, \
+    FetchTemplates, ApplyTemplate, FetchLastTemplateUsage
 from locustio.common_utils import jira_measure, fetch_by_re, timestamp_int, generate_random_string, TEXT_HEADERS, \
     ADMIN_HEADERS, NO_TOKEN_HEADERS, RESOURCE_HEADERS, init_logger, raise_if_login_failed, JSON_HEADERS
 
@@ -165,7 +166,42 @@ def create_template(locust):
     content = response.content.decode('utf-8')
     node_ids = re.findall(params.id_pattern, content)
     if not node_ids:
-        locust.error("Failed to create template")
+        logger.error("Failed to create template")
+
+
+def fetch_templates(locust):
+    params = FetchTemplates()
+    body = params.prepare_graqhql_body()
+
+    response = locust.post('/rest/railsware/smart-templates/latest/graphql', headers=JSON_HEADERS, json=body, catch_response=True)
+    content = response.content.decode('utf-8')
+    template_ids = re.findall(params.id_pattern, content)
+    return template_ids
+
+
+def fetch_last_template_usage(locust, template_id):
+    params = FetchLastTemplateUsage()
+    body = params.prepare_graqhql_body(template_id)
+
+    response = locust.post('/rest/railsware/smart-templates/latest/graphql', headers=JSON_HEADERS, json=body, catch_response=True)
+    content = response.content.decode('utf-8')
+    progress = re.findall(params.progress_pattern, content)
+    if progress:
+        return progress[0]
+    else:
+        logger.error(f"Unable to get progress from {content}")
+    return None
+
+
+def apply_template(locust, template_id):
+    params = ApplyTemplate()
+    body = params.prepare_graqhql_body(template_id)
+
+    response = locust.post('/rest/railsware/smart-templates/latest/graphql', headers=JSON_HEADERS, json=body, catch_response=True)
+    content = response.content.decode('utf-8')
+    template_ids = re.findall(params.id_pattern, content)
+    if not template_ids:
+        logger.error("Failed to apply template")
 
 
 def create_issue(locust):

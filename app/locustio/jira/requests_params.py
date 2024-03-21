@@ -1,7 +1,7 @@
 from locustio.common_utils import generate_random_string, read_input_file, BaseResource
 from util.project_paths import JIRA_DATASET_ISSUES, JIRA_DATASET_JQLS, JIRA_DATASET_KANBAN_BOARDS, \
     JIRA_DATASET_PROJECTS, JIRA_DATASET_SCRUM_BOARDS, JIRA_DATASET_USERS
-from extension.jira.constants import PROJECT_ID, EPIC_ID, ISSUE_TYPE_IDS, SUB_TASK_ID, PRIORITY_IDS
+from extension.jira.constants import PROJECT_ID, EPIC_ID, ISSUE_TYPE_IDS, SUB_TASK_ID, PRIORITY_IDS, ADMIN_USER_KEY
 import json
 import uuid
 import random
@@ -93,13 +93,13 @@ class CreateTemplate(JiraResource):
         return nodes
 
     def prepare_graqhql_body(self):
-        operationName = "createTemplateFromNodes"
+        operation_name = "createTemplateFromNodes"
         query = "mutation createTemplateFromNodes($input: CreateTemplateFromNodesInput!) {\n  createTemplateFromNodes(input: $input) {\n    template {\n      id\n      name\n      nodes {\n        ...TemplateNode\n        __typename\n      }\n      variables {\n        name\n        type\n        __typename\n      }\n      __typename\n    }\n    validations {\n      validationErrors\n      __typename\n    }\n    __typename\n  }\n}\n\nfragment TemplateBasicNode on TemplateNode {\n  checklist\n  id\n  level\n  parentId\n  position\n  summary\n  issueTypeId\n  __typename\n}\n\nfragment TemplateNode on TemplateNode {\n  ...TemplateBasicNode\n  description\n  fields\n  __typename\n}"
         template_name = f"Locust template name {generate_random_string(20)}"
 
         nodes = self._generate_nodes_hierarchy()
         body = {
-            "operationName": operationName,
+            "operationName": operation_name,
             "query": query,
             "variables": {
                 "input": {
@@ -111,6 +111,60 @@ class CreateTemplate(JiraResource):
             }
         }
         return body
+
+
+class FetchTemplates(JiraResource):
+    id_pattern = '"id":([0-9]+)'
+
+    def prepare_graqhql_body(self):
+        operation_name = "templatesList"
+        query = "query templatesList($projectIds: [Long!]) {\n  templates(projectIds: $projectIds) {\n    id\n    name\n    __typename\n  }\n}"
+
+        body = {
+            "operationName": operation_name,
+            "query": query,
+            "variables": {
+                "projectIds": [PROJECT_ID]
+            }
+        }
+        return body
+
+
+class ApplyTemplate(JiraResource):
+    id_pattern = '"id":([0-9]+)'
+
+    def prepare_graqhql_body(self, template_id):
+        operation_name = "applyTemplate"
+        query = "mutation applyTemplate($id: Long!, $variables: [VariableValueInput!]) {\n  applyTemplate(id: $id, variables: $variables) {\n    template {\n      id\n      __typename\n    }\n    validations {\n      isValid\n      validationErrors\n      __typename\n    }\n    __typename\n  }\n}"
+
+        body = {
+            "operationName": operation_name,
+            "query": query,
+            "variables": {
+                "id": template_id,
+                "variables": []
+            }
+        }
+        return body
+
+
+class FetchLastTemplateUsage(JiraResource):
+    progress_pattern = '"progress":\s*([0-9]+)'
+
+    def prepare_graqhql_body(self, template_id):
+        operation_name = "templateUsage"
+        query = "query templateUsage($id: Long!, $userId: String!) {\n  templates(ids: [$id]) {\n    id\n    name\n    usages(last: 1, userId: $userId) {\n      id\n      status\n      progress\n      rootIssueKey\n      __typename\n    }\n    __typename\n  }\n}"
+
+        body = {
+            "operationName": operation_name,
+            "query": query,
+            "variables": {
+                "id": template_id,
+                "userId": ADMIN_USER_KEY
+            }
+        }
+        return body
+
 
 class CreateIssue(JiraResource):
     action_name = 'create_issue'
