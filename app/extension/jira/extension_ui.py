@@ -34,16 +34,15 @@ def app_specific_action(webdriver, datasets):
 
     @print_timing("selenium_app_custom_action")
     def measure():
-        @print_timing("selenium_app_custom_action:view_issue")
+        @print_timing("selenium_app_custom_action:view_issue_with_hierarchy")
         def sub_measure():
             page.go_to_url(f"{JIRA_SETTINGS.server_url}/browse/{issue_key}")
             page.wait_until_visible((By.ID, "summary-val"))  # Wait for summary field visible
             page.wait_until_visible((By.ID, "smart-templates-issue-panel"))  # Wait for you app-specific UI element by ID selector
-            # TODO: the next lines provide real loading performance
-            # iframe = webdriver.find_element(By.CSS_SELECTOR, "iframe")
-            # webdriver.switch_to.frame(iframe)
-            # page.wait_until_visible((By.XPATH,  "//*[contains(text(), 'Save structure as a new template...')]"))
-            # webdriver.switch_to.default_content()
+            iframe = webdriver.find_element(By.CSS_SELECTOR, "iframe")
+            webdriver.switch_to.frame(iframe)
+            page.wait_until_visible((By.XPATH,  "//*[contains(text(), 'Save structure as a new template...')]"))
+            webdriver.switch_to.default_content()
         sub_measure()
     measure()
 
