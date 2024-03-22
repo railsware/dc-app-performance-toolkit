@@ -38,7 +38,7 @@ settings:
     standalone_extension: 1 # By default disabled
     standalone_extension_2: 2
     # Custom dataset section.
-    custom_dataset_query:          # Write JQL query to add JQL output to the app/datasets/jira/custom-issues.csv, e.g. "summary ~ 'AppIssue*'"
+    custom_dataset_query: "project = 'Templates project'"         # Write JQL query to add JQL output to the app/datasets/jira/custom-issues.csv, e.g. "summary ~ 'AppIssue*'"
 services:
   - module: shellexec
     prepare:
