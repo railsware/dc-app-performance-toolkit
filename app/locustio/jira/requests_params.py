@@ -80,16 +80,14 @@ class CreateTemplate(JiraResource):
 
     def _generate_nodes_hierarchy(self):
         epic = self._generate_node("Epic", EPIC_ID)
-        num_of_stories = random.randint(5, 10)
+        num_of_stories = 5
         nodes = [epic]
 
         for _ in range(num_of_stories):
             issue_type_id = random.choice(ISSUE_TYPE_IDS)
             node = self._generate_node("Story", issue_type_id, epic["id"])
-            num_of_subtasks = random.randint(0, 2)
             nodes.append(node)
-            for _ in range(num_of_subtasks):
-               nodes.append(self._generate_node("Subtask", SUB_TASK_ID, node["id"]))
+            nodes.append(self._generate_node("Subtask", SUB_TASK_ID, node["id"]))
         return nodes
 
     def prepare_graqhql_body(self):
