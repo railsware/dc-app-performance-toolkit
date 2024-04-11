@@ -162,7 +162,8 @@ def create_template(locust):
     params = CreateTemplate()
     body = params.prepare_graqhql_body()
 
-    response = locust.post('/rest/railsware/smart-templates/latest/graphql', headers=JSON_HEADERS, json=body, catch_response=True)
+    response = locust.post('/rest/railsware/smart-templates/latest/graphql',
+                           headers=JSON_HEADERS, json=body, catch_response=True)
     content = response.content.decode('utf-8')
     node_ids = re.findall(params.id_pattern, content)
     if not node_ids:
@@ -173,7 +174,8 @@ def fetch_templates(locust):
     params = FetchTemplates()
     body = params.prepare_graqhql_body()
 
-    response = locust.post('/rest/railsware/smart-templates/latest/graphql', headers=JSON_HEADERS, json=body, catch_response=True)
+    response = locust.post('/rest/railsware/smart-templates/latest/graphql',
+                           headers=JSON_HEADERS, json=body, catch_response=True)
     content = response.content.decode('utf-8')
     template_ids = re.findall(params.id_pattern, content)
     return template_ids
@@ -183,7 +185,8 @@ def fetch_last_template_usage(locust, template_id):
     params = FetchLastTemplateUsage()
     body = params.prepare_graqhql_body(template_id)
 
-    response = locust.post('/rest/railsware/smart-templates/latest/graphql', headers=JSON_HEADERS, json=body, catch_response=True)
+    response = locust.post('/rest/railsware/smart-templates/latest/graphql',
+                           headers=JSON_HEADERS, json=body, catch_response=True)
     content = response.content.decode('utf-8')
     progress = re.findall(params.progress_pattern, content)
     if progress:
@@ -197,7 +200,8 @@ def apply_template(locust, template_id):
     params = ApplyTemplate()
     body = params.prepare_graqhql_body(template_id)
 
-    response = locust.post('/rest/railsware/smart-templates/latest/graphql', headers=JSON_HEADERS, json=body, catch_response=True)
+    response = locust.post('/rest/railsware/smart-templates/latest/graphql',
+                           headers=JSON_HEADERS, json=body, catch_response=True)
     content = response.content.decode('utf-8')
     template_ids = re.findall(params.id_pattern, content)
     if not template_ids:

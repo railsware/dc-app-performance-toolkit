@@ -6,6 +6,7 @@ import json
 import uuid
 import random
 
+
 def jira_datasets():
     data_sets = dict()
     data_sets["issues"] = read_input_file(JIRA_DATASET_ISSUES)
@@ -53,6 +54,7 @@ class BrowseIssue(JiraResource):
 class ViewDashboard(JiraResource):
     action_name = 'view_dashboard'
 
+
 class CreateTemplate(JiraResource):
     id_pattern = '"id":([0-9]+)'
 
@@ -60,7 +62,7 @@ class CreateTemplate(JiraResource):
     def _generate_node(issue_hierarchy_level, issue_type_id, parent_id=None):
         node_id = str(uuid.uuid4())
         summary = f"Issue {str(random.randint(1, 100))}"
-        description =f"{generate_random_string(200)}"
+        description = f"{generate_random_string(200)}"
         fields = {
             "priority": {
                 "id": random.choice(PRIORITY_IDS)
