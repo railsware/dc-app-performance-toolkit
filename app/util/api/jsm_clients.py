@@ -84,6 +84,7 @@ class JsmRestClient(JiraRestClient):
         response = self.get(api_url, f"Could not get customer request for id/key {issue_id_or_key}", auth=auth)
         return response.json()
 
+    @retry()
     def get_requests(self, start_at: int = 0, max_results: int = 100, auth: tuple = None, status: str = None):
         """
         Returns the customer request for a given request Id/key.
@@ -104,7 +105,7 @@ class JsmRestClient(JiraRestClient):
         init_url = self.host + "/rest/servicedeskapi/request"
         while loop_count > 0:
 
-            api_url = init_url + f"?start={start_at}&limit={max_results}"
+            api_url = init_url + f"?start={start_at}&limit={max_results}&requestOwnership=PARTICIPATED_REQUESTS"
             if status:
                 api_url += f"&requestStatus={status}"
 
