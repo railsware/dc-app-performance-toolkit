@@ -11,7 +11,10 @@ status_ids = [1, 2, 3, 4]
 @jira_measure("locust_app_specific_action")
 def app_specific_action(locust):
     # update locustio.jira.requests_params with 'data_sets["custom-issues"] = read_input_file (JIRA_DATASET_CUSTOM_ISSUES)'
-    issue_key = random.choice(jira_dataset["custom-issues"])[0]
+    # issue_key = random.choice(jira_dataset["custom-issues"])[0]
+    # hardcode issue keys as custom-issues dataset is not available here somehow
+    issue_key=random.choice(["CP-1", "CP-2", "CP-3", "CP-4", "CP-5", "CP-6", "CP-7", "CP-8", "CP-9", "CP-10"])
+
     logger.locust_info(f"Get associated checklists from {issue_key}")
     CHECKLIST_PARAMS = {
         "issueKey": issue_key
