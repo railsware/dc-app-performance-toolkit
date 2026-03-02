@@ -2,13 +2,12 @@ import logging
 from argparse import ArgumentParser
 from datetime import datetime, timedelta
 from time import sleep, time
+from functools import wraps
 
 import boto3
 import botocore
 from boto3.exceptions import Boto3Error
 from botocore import exceptions
-
-from retry import retry
 
 DEFAULT_RETRY_COUNT = 3
 DEFAULT_RETRY_DELAY = 10
@@ -16,6 +15,23 @@ DEFAULT_RETRY_DELAY = 10
 US_EAST_2 = "us-east-2"
 US_EAST_1 = "us-east-1"
 REGIONS = [US_EAST_2, US_EAST_1]
+
+
+def retry(exception_type=Exception, tries=DEFAULT_RETRY_COUNT, delay=DEFAULT_RETRY_DELAY):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            for attempt in range(tries):
+                try:
+                    return func(*args, **kwargs)
+                except exception_type as e:
+                    logging.error(f"Attempt {attempt + 1} failed with error: {e}")
+                    if attempt < tries - 1:
+                        time.sleep(delay)
+                    else:
+                        raise
+        return wrapper
+    return decorator
 
 
 def is_float(element):
@@ -268,7 +284,7 @@ def delete_hosted_zone_record_if_exists(aws_region, cluster_name):
             logging.error(f"Unexpected error occurs: {e}")
 
 
-@retry(Exception, tries=DEFAULT_RETRY_COUNT, delay=DEFAULT_RETRY_DELAY)
+@retry()
 def delete_lb(aws_region, vpc_id):
     elb_client = boto3.client('elb', region_name=aws_region)
     try:
@@ -313,7 +329,7 @@ def wait_for_nat_gateway_delete(ec2, nat_gateway_id):
         logging.error(f"NAT gateway with id {nat_gateway_id} was not deleted in {timeout} seconds.")
 
 
-@retry(Exception, tries=DEFAULT_RETRY_COUNT, delay=DEFAULT_RETRY_DELAY)
+@retry()
 def delete_nat_gateway(aws_region, vpc_id):
     ec2_client = boto3.client('ec2', region_name=aws_region)
     filters = [{'Name': 'vpc-id', 'Values': [f'{vpc_id}', ]}, ]
@@ -333,7 +349,7 @@ def delete_nat_gateway(aws_region, vpc_id):
                 logging.error(f"Deleting NAT gateway with id {nat_gateway_id} failed with error: {e}")
 
 
-@retry(Exception, tries=DEFAULT_RETRY_COUNT, delay=DEFAULT_RETRY_DELAY)
+@retry()
 def delete_igw(ec2_resource, vpc_id):
     vpc_resource = ec2_resource.Vpc(vpc_id)
     igws = vpc_resource.internet_gateways.all()
@@ -355,7 +371,7 @@ def delete_igw(ec2_resource, vpc_id):
                     logging.error(f"Deleting igw failed with error: {e}")
 
 
-@retry(Exception, tries=12, delay=DEFAULT_RETRY_DELAY)
+@retry(tries=12)
 def delete_subnets(ec2_resource, vpc_id, aws_region):
     vpc_resource = ec2_resource.Vpc(vpc_id)
     subnets_all = vpc_resource.subnets.all()
@@ -381,7 +397,7 @@ def delete_subnets(ec2_resource, vpc_id, aws_region):
             logging.error(f"Delete of subnet failed with error: {e}")
 
 
-@retry(Exception, tries=DEFAULT_RETRY_COUNT, delay=DEFAULT_RETRY_DELAY)
+@retry()
 def delete_route_tables(ec2_resource, vpc_id):
     vpc_resource = ec2_resource.Vpc(vpc_id)
     rtbs = vpc_resource.route_tables.all()
@@ -398,7 +414,7 @@ def delete_route_tables(ec2_resource, vpc_id):
             logging.error(f"Delete of route table failed with error: {e}")
 
 
-@retry(Exception, tries=DEFAULT_RETRY_COUNT, delay=DEFAULT_RETRY_DELAY)
+@retry()
 def delete_security_groups(ec2_resource, vpc_id):
     vpc_resource = ec2_resource.Vpc(vpc_id)
     sgps = vpc_resource.security_groups.all()
@@ -981,7 +997,14 @@ def delete_expired_tf_state_s3_buckets():
         for bucket in response["Buckets"]:
             if bucket_name_template in bucket["Name"]:
                 created_date = bucket["CreationDate"]
-                tags = s3_client.get_bucket_tagging(Bucket=bucket["Name"])["TagSet"]
+                try:
+                    tags = s3_client.get_bucket_tagging(Bucket=bucket["Name"])["TagSet"]
+                except botocore.exceptions.ClientError as e:
+                    if e.response['Error']['Code'] == 'NoSuchTagSet':
+                        raise RuntimeError(f"S3 bucket {bucket['Name']} does not have any tags.")
+                    else:
+                        logging.error(f"Unexpected error for bucket: {bucket['Name']}")
+                        raise e
                 persist_days = next((tag["Value"] for tag in tags if tag["Key"] == "persist_days"), None)
                 if persist_days:
                     if not is_float(persist_days):
@@ -995,7 +1018,7 @@ def delete_expired_tf_state_s3_buckets():
                         logging.info(f"S3 bucket {bucket['Name']} is EOL and should be deleted.")
                         delete_bucket_by_name(s3_client, bucket['Name'])
                 else:
-                    logging.warning(f"S3 bucket {bucket['Name']} does not have tags.")
+                    logging.warning(f"S3 bucket {bucket['Name']} is missing persis_days tag.")
 
 
 def is_policy_attached(policy_arn):

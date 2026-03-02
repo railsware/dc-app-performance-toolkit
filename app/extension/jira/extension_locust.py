@@ -9,6 +9,10 @@ jira_dataset = jira_datasets()
 status_ids = [1, 2, 3, 4]
 
 @jira_measure("locust_app_specific_action")
+# WebSudo is a feature that enhances security by requiring administrators to re-authenticate before
+# accessing administrative functions within Atlassian applications.
+# do_websudo=True requires user administrative rights, otherwise requests fail.
+#@run_as_specific_user(username='admin', password='admin', do_websudo=False)  # run as specific user
 def app_specific_action(locust):
     # update locustio.jira.requests_params with 'data_sets["custom-issues"] = read_input_file (JIRA_DATASET_CUSTOM_ISSUES)'
     # issue_key = random.choice(jira_dataset["custom-issues"])[0]
