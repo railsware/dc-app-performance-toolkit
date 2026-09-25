@@ -1,0 +1,20 @@
+app/extension/jira/extension_ui.py
+  s_0d29ea582a21ae::t_bfa787c9fcacfe 45-50
+  s_0d29ea582a21ae::t_2ed8b81cdf0f22 13,15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "662e4fd90dac7f96329f23989b37b2f66a16cf42",
+  "prompts": {},
+  "sessions": {
+    "s_0d29ea582a21ae": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a6b8977e-eb4c-40c7-ab7c-d90b2cc3cc6c",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Roman Sukhach <roman.sukhach@railsware.com>"
+    }
+  }
+}
